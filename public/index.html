@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopify Orders</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #007bff;
+        }
+        h3 {
+            color: #495057;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background: #007bff;
+            color: white;
+        }
+        td {
+            background: #f9f9f9;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .no-orders {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .loading {
+            text-align: center;
+            font-style: italic;
+        }
+        .message {
+            text-align: center;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Shopify Orders</h1>
+
+    <div class="container">
+        <h3>Orders by Email</h3>
+        <div id="ordersByEmail" class="message">Fetching orders...</div>
+
+        <h3>Orders by Phone</h3>
+        <div id="ordersByPhone" class="message">Fetching orders...</div>
+    </div>
+
+    <script>
+        let customerEmail = '';
+        let customerPhone = '';
+        const BACKEND_URL = "https://eleven-views-heal.loca.lt/";
+
+        // Listen for Chatwoot messages
+        window.addEventListener("message", function (event) {
+            let data;
+            try {
+                data = JSON.parse(event.data);
+            } catch (error) {
+                console.error("Error parsing message:", error);
+                return;
+            }
+
+            if (data.event === "appContext") {
+                const { contact } = data.data;
+                customerEmail = contact?.email || '';
+                customerPhone = contact?.phone_number || '';
+
+                console.log("Received phone number:", customerPhone);  // Add this line
+
+                if (customerEmail) fetchOrdersByEmail(customerEmail);
+                else document.getElementById("ordersByEmail").innerHTML = "<p class='no-orders'>No orders found for this email.</p>";
+
+                if (customerPhone) fetchOrdersByPhone(customerPhone);
+                else document.getElementById("ordersByPhone").innerHTML = "<p class='no-orders'>No orders found for this phone number.</p>";
+            }
+        });
+
+        // Fetch orders by email
+        async function fetchOrdersByEmail(email) {
+            const ordersDiv = document.getElementById("ordersByEmail");
+            if (!ordersDiv) return console.error("Error: 'ordersByEmail' element not found in DOM");
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/orders?email=${encodeURIComponent(email)}`);
+                if (!response.ok) throw new Error('Failed to fetch orders by email');
+
+                const data = await response.json();
+                displayEmailOrders(data, "ordersByEmail");
+                console.log("Orders fetched by email:", data);
+
+            } catch (error) {
+                ordersDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+
+        // Fetch orders by phone
+        async function fetchOrdersByPhone(phone) {
+            const ordersDiv = document.getElementById("ordersByPhone");
+            if (!ordersDiv) return console.error("Error: 'ordersByPhone' element not found in DOM");
+
+            // Remove the '+2' or '2' country code if it exists
+            const phoneWithoutCountryCode = phone.replace(/^(\+2|2)/, '');
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/orders/by-phone`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ website_url: "https://hushup-eg.com/", phone: phoneWithoutCountryCode })
+                });
+
+                if (!response.ok) throw new Error("Failed to fetch orders by phone");
+
+                const data = await response.json();
+                displayPhoneOrders(data.data, "ordersByPhone");
+                console.log("Orders fetched by phone:", data.data);
+
+            } catch (error) {
+                ordersDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+
+        // Display orders fetched by email
+        function displayEmailOrders(orders, elementId) {
+            const container = document.getElementById(elementId);
+            if (!container) return console.error(`Error: '${elementId}' element not found in DOM`);
+
+            if (!orders || orders.length === 0) {
+                container.innerHTML = "<p class='no-orders'>No orders found for this email.</p>";
+                return;
+            }
+
+            const table = `
+                <table>
+                    <tr>
+                        <th>Order date</th>
+                        <th>Order #</th>
+                        <th>Customer</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Order Link</th>
+                    </tr>
+                    ${orders.map(order => `
+                        <tr>
+                            <td>${order.updated_at.slice(0, 10) || 'N/A'}</td>
+                            <td>${order.order_number || 'N/A'}</td>
+                            <td>${order.customer?.first_name || 'Guest'} ${order.customer?.last_name || ''}</td>
+                            <td>${order.line_items.map(item => item.title).join(', ')}</td>
+                            <td>${order.total_price} ${order.currency}</td>
+                            <td>${order.financial_status}</td>
+
+                            <td><a href="${order.order_status_url}" target="_blank">View</a></td>
+                        </tr>
+                    `).join('')}
+                </table>
+            `;
+
+            container.innerHTML = table;
+        }
+
+        // Display orders fetched by phone
+        function displayPhoneOrders(orders, elementId) {
+            const container = document.getElementById(elementId);
+            if (!container) return console.error(`Error: '${elementId}' element not found in DOM`);
+
+            if (!orders || orders.length === 0) {
+                container.innerHTML = "<p class='no-orders'>No orders found for this phone number.</p>";
+                return;
+            }
+
+            const table = `
+                <table>
+                    <tr>
+                        <th>Order date</th>
+                        <th>Order #</th>
+                        <th>Items</th>
+                        <th>Phone</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Order Link</th>
+                    </tr>
+                    ${orders.map(order => `
+                        <tr>
+                            <td>${order?.updated_at.slice(0, 10) || 'N/A'}</td>
+                            <td>${order.order_id || 'N/A'}</td>
+                            <td>${order?.payload?.line_items?.map(item => item.name).join(', ') || 'N/A'}</td>
+                            <td>${order.customer_phone || 'N/A'}</td>
+                            <td>${order?.total || 'N/A'}</td>
+                            <td>${order?.payload.financial_status || 'N/A'}</td>
+                            <td><a href="${order?.payload?.order_status_url}" target="_blank">View</a></td>
+                        </tr>
+                    `).join('')}
+                </table>
+            `;
+
+            container.innerHTML = table;
+        }
+
+    </script>
+
+</body>
+</html>
