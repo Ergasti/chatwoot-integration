@@ -59,6 +59,26 @@
         .message {
             text-align: center;
             font-size: 18px;
+            padding-bottom: 3rem;
+        }
+        .search-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .search-container input {
+            padding: 10px;
+            margin: 5px;
+            width: 250px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .search-container button {
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -68,18 +88,25 @@
 
     <div class="container">
         <h3>Orders by Email</h3>
+        <div class="search-container">
+            <input type="text" id="emailInput" placeholder="Enter email">
+            <button onclick="fetchOrdersByEmail(document.getElementById('emailInput').value)">Search by Email</button>
+        </div>
         <div id="ordersByEmail" class="message">Fetching orders...</div>
 
         <h3>Orders by Phone</h3>
+        <div class="search-container">
+            <input type="text" id="phoneInput" placeholder="Enter phone number">
+            <button onclick="fetchOrdersByPhone(document.getElementById('phoneInput').value)">Search by Phone</button>
+        </div>
         <div id="ordersByPhone" class="message">Fetching orders...</div>
+
+
     </div>
 
     <script>
-        let customerEmail = '';
-        let customerPhone = '';
-        const BACKEND_URL = "https://eleven-views-heal.loca.lt/";
+        const BACKEND_URL = "http://localhost:5000";
 
-        // Listen for Chatwoot messages
         window.addEventListener("message", function (event) {
             let data;
             try {
@@ -103,53 +130,44 @@
                 else document.getElementById("ordersByPhone").innerHTML = "<p class='no-orders'>No orders found for this phone number.</p>";
             }
         });
-
-        // Fetch orders by email
         async function fetchOrdersByEmail(email) {
+            if (!email) return alert("Please enter an email");
             const ordersDiv = document.getElementById("ordersByEmail");
-            if (!ordersDiv) return console.error("Error: 'ordersByEmail' element not found in DOM");
-
+            ordersDiv.innerHTML = "Loading...";
             try {
                 const response = await fetch(`${BACKEND_URL}/orders?email=${encodeURIComponent(email)}`);
                 if (!response.ok) throw new Error('Failed to fetch orders by email');
-
                 const data = await response.json();
                 displayEmailOrders(data, "ordersByEmail");
-                console.log("Orders fetched by email:", data);
-
+                console.log(data);
+                
             } catch (error) {
                 ordersDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
             }
         }
 
-        // Fetch orders by phone
+
         async function fetchOrdersByPhone(phone) {
+            if (!phone) return alert("Please enter a phone number");
             const ordersDiv = document.getElementById("ordersByPhone");
-            if (!ordersDiv) return console.error("Error: 'ordersByPhone' element not found in DOM");
-
-            // Remove the '+2' or '2' country code if it exists
+            ordersDiv.innerHTML = "Loading...";
             const phoneWithoutCountryCode = phone.replace(/^(\+2|2)/, '');
-
             try {
                 const response = await fetch(`${BACKEND_URL}/orders/by-phone`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ website_url: "https://hushup-eg.com/", phone: phoneWithoutCountryCode })
                 });
-
                 if (!response.ok) throw new Error("Failed to fetch orders by phone");
-
                 const data = await response.json();
                 displayPhoneOrders(data.data, "ordersByPhone");
-                console.log("Orders fetched by phone:", data.data);
-
             } catch (error) {
                 ordersDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
             }
         }
 
-        // Display orders fetched by email
-        function displayEmailOrders(orders, elementId) {
+          // Display orders fetched by email
+          function displayEmailOrders(orders, elementId) {
             const container = document.getElementById(elementId);
             if (!container) return console.error(`Error: '${elementId}' element not found in DOM`);
 
@@ -172,7 +190,7 @@
                     ${orders.map(order => `
                         <tr>
                             <td>${order.updated_at.slice(0, 10) || 'N/A'}</td>
-                            <td>${order.order_id || 'N/A'}</td>
+                            <td>${order.id || 'N/A'}</td>
                             <td>${order.customer?.first_name || 'Guest'} ${order.customer?.last_name || ''}</td>
                             <td>${order.line_items.map(item => item.title).join(', ')}</td>
                             <td>${order.total_price} ${order.currency}</td>
