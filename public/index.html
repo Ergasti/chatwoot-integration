@@ -172,7 +172,7 @@
                     ${orders.map(order => `
                         <tr>
                             <td>${order.updated_at.slice(0, 10) || 'N/A'}</td>
-                            <td>${order.order_number || 'N/A'}</td>
+                            <td>${order.order_id || 'N/A'}</td>
                             <td>${order.customer?.first_name || 'Guest'} ${order.customer?.last_name || ''}</td>
                             <td>${order.line_items.map(item => item.title).join(', ')}</td>
                             <td>${order.total_price} ${order.currency}</td>
@@ -211,7 +211,7 @@
                     ${orders.map(order => `
                         <tr>
                             <td>${order?.updated_at.slice(0, 10) || 'N/A'}</td>
-                            <td>${order.order_id || 'N/A'}</td>
+                            <td>${order.id || 'N/A'}</td>
                             <td>${order?.payload?.line_items?.map(item => item.name).join(', ') || 'N/A'}</td>
                             <td>${order.customer_phone || 'N/A'}</td>
                             <td>${order?.total || 'N/A'}</td>
