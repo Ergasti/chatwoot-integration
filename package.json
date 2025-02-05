@@ -3,8 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "npm run dev",
-    "dev": "npm run start && nodemon index.js"
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "start:prod": "pm2 start index.js --name chatwoot-integration"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": [],
   "author": "",
@@ -15,7 +19,9 @@
     "axios": "^1.7.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
     "nodemon": "^3.1.9"
   }
 }
