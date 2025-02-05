@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",  // Start in production without environment variables
-    "dev": "cross-env NODE_ENV=DEVELOPMENT node server.js",  // Development environment
-    "prod": "cross-env NODE_ENV=PRODUCTION pm2 start server.js --name chatwoot-integration"  // Production with PM2
+    "start": "node server.js", 
+    "dev": "cross-env NODE_ENV=DEVELOPMENT node server.js", 
+    "prod": "cross-env NODE_ENV=PRODUCTION pm2 start server.js --name chatwoot-integration"
   },
   "engines": {
     "node": ">=18.0.0"
