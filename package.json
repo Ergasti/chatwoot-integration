@@ -6,7 +6,7 @@
   "start": "node server.js",
   "dev": "set NODE_ENV=DEVELOPMENT && node server",
   "prod": "set NODE_ENV=PRODUCTION && node server"
-}
+},
   "engines": {
     "node": ">=18.0.0"
   },
