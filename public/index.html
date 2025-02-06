@@ -80,6 +80,9 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        #phoneSearchContainer {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -88,24 +91,25 @@
 
     <div class="container">
         <h3>Orders by Email</h3>
-        <div class="search-container">
+        <!-- <div class="search-container">
             <input type="text" id="emailInput" placeholder="Enter email">
             <button onclick="fetchOrdersByEmail(document.getElementById('emailInput').value)">Search by Email</button>
-        </div>
+        </div> -->
         <div id="ordersByEmail" class="message">Fetching orders...</div>
 
         <h3>Orders by Phone</h3>
         <div class="search-container">
-            <input type="text" id="phoneInput" placeholder="Enter phone number">
-            <button onclick="fetchOrdersByPhone(document.getElementById('phoneInput').value)">Search by Phone</button>
+            <button id="showPhoneSearchBtn">Manual Search</button>
+            <div id="phoneSearchContainer">
+                <input type="text" id="phoneInput" placeholder="Enter phone number">
+                <button onclick="fetchOrdersByPhone(document.getElementById('phoneInput').value)">Search</button>
+            </div>
         </div>
         <div id="ordersByPhone" class="message">Fetching orders...</div>
-
-
     </div>
 
     <script>
-        const BACKEND_URL = "http://localhost:5000";
+        const BACKEND_URL = "https://order-search.erg.st/";
 
         window.addEventListener("message", function (event) {
             let data;
@@ -121,8 +125,6 @@
                 customerEmail = contact?.email || '';
                 customerPhone = contact?.phone_number || '';
 
-                console.log("Received phone number:", customerPhone);  // Add this line
-
                 if (customerEmail) fetchOrdersByEmail(customerEmail);
                 else document.getElementById("ordersByEmail").innerHTML = "<p class='no-orders'>No orders found for this email.</p>";
 
@@ -130,6 +132,14 @@
                 else document.getElementById("ordersByPhone").innerHTML = "<p class='no-orders'>No orders found for this phone number.</p>";
             }
         });
+
+            document.getElementById("showPhoneSearchBtn").addEventListener("click", function () {
+                const phoneSearchContainer = document.getElementById("phoneSearchContainer");
+                const currentDisplay = window.getComputedStyle(phoneSearchContainer).display;
+                phoneSearchContainer.style.display = currentDisplay === "none" ? "block" : "none";
+            });
+
+
         async function fetchOrdersByEmail(email) {
             if (!email) return alert("Please enter an email");
             const ordersDiv = document.getElementById("ordersByEmail");
@@ -138,14 +148,11 @@
                 const response = await fetch(`${BACKEND_URL}/orders?email=${encodeURIComponent(email)}`);
                 if (!response.ok) throw new Error('Failed to fetch orders by email');
                 const data = await response.json();
-                displayEmailOrders(data, "ordersByEmail");
-                console.log(data);
-                
+                displayOrders(data, "ordersByEmail");
             } catch (error) {
                 ordersDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
             }
         }
-
 
         async function fetchOrdersByPhone(phone) {
             if (!phone) return alert("Please enter a phone number");
@@ -160,58 +167,18 @@
                 });
                 if (!response.ok) throw new Error("Failed to fetch orders by phone");
                 const data = await response.json();
-                displayPhoneOrders(data.data, "ordersByPhone");
+                displayOrders(data.data, "ordersByPhone");
             } catch (error) {
                 ordersDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
             }
         }
 
-          // Display orders fetched by email
-          function displayEmailOrders(orders, elementId) {
+        function displayOrders(orders, elementId) {
             const container = document.getElementById(elementId);
             if (!container) return console.error(`Error: '${elementId}' element not found in DOM`);
 
             if (!orders || orders.length === 0) {
-                container.innerHTML = "<p class='no-orders'>No orders found for this email.</p>";
-                return;
-            }
-
-            const table = `
-                <table>
-                    <tr>
-                        <th>Order date</th>
-                        <th>Order #</th>
-                        <th>Customer</th>
-                        <th>Items</th>
-                        <th>Total</th>
-                        <th>Status</th>
-                        <th>Order Link</th>
-                    </tr>
-                    ${orders.map(order => `
-                        <tr>
-                            <td>${order.updated_at.slice(0, 10) || 'N/A'}</td>
-                            <td>${order.id || 'N/A'}</td>
-                            <td>${order.customer?.first_name || 'Guest'} ${order.customer?.last_name || ''}</td>
-                            <td>${order.line_items.map(item => item.title).join(', ')}</td>
-                            <td>${order.total_price} ${order.currency}</td>
-                            <td>${order.financial_status}</td>
-
-                            <td><a href="${order.order_status_url}" target="_blank">View</a></td>
-                        </tr>
-                    `).join('')}
-                </table>
-            `;
-
-            container.innerHTML = table;
-        }
-
-        // Display orders fetched by phone
-        function displayPhoneOrders(orders, elementId) {
-            const container = document.getElementById(elementId);
-            if (!container) return console.error(`Error: '${elementId}' element not found in DOM`);
-
-            if (!orders || orders.length === 0) {
-                container.innerHTML = "<p class='no-orders'>No orders found for this phone number.</p>";
+                container.innerHTML = "<p class='no-orders'>No orders found.</p>";
                 return;
             }
 
@@ -221,19 +188,17 @@
                         <th>Order date</th>
                         <th>Order #</th>
                         <th>Items</th>
-                        <th>Phone</th>
                         <th>Total</th>
                         <th>Status</th>
                         <th>Order Link</th>
                     </tr>
                     ${orders.map(order => `
                         <tr>
-                            <td>${order?.updated_at.slice(0, 10) || 'N/A'}</td>
+                            <td>${order.updated_at ? order.updated_at.slice(0, 10) : 'N/A'}</td>
                             <td>${order.id || 'N/A'}</td>
                             <td>${order?.payload?.line_items?.map(item => item.name).join(', ') || 'N/A'}</td>
-                            <td>${order.customer_phone || 'N/A'}</td>
                             <td>${order?.total || 'N/A'}</td>
-                            <td>${order?.payload.financial_status || 'N/A'}</td>
+                            <td>${order?.payload.financial_status || 'N/A'}
                             <td><a href="${order?.payload?.order_status_url}" target="_blank">View</a></td>
                         </tr>
                     `).join('')}
@@ -242,7 +207,6 @@
 
             container.innerHTML = table;
         }
-
     </script>
 
 </body>
