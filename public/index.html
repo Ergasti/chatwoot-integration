@@ -190,7 +190,8 @@
                         <th>Items</th>
                         <th>Total</th>
                         <th>Status</th>
-                        <th>Order Link</th>
+                        <th>View Order</th>
+                        <th>View Order</th>
                     </tr>
                     ${orders.map(order => `
                         <tr>
@@ -200,6 +201,7 @@
                             <td>${order?.total || 'N/A'}</td>
                             <td>${order?.payload.financial_status || 'N/A'}
                             <td><a href="${order?.payload?.order_status_url}" target="_blank">View</a></td>
+                            <td><a href="${order?.awb?.tracking_url}" target="_blank">${order?.awb?.shipping_company} : ${order?.awb?.tracking_numbert}</a></td>
                         </tr>
                     `).join('')}
                 </table>
